@@ -13,7 +13,7 @@ const nextConfig = {
   },
   // Enable experimental features for better performance
   experimental: {
-    optimizeCss: true,
+    optimizeCss: false, // Disable to avoid critters dependency issue
   },
   // Optimize for production
   swcMinify: true,
