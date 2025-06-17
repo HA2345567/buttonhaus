@@ -19,7 +19,7 @@ export const categories: Category[] = [
     id: "cat-3",
     name: "Hooks & Clasps",
     description: "Reliable hooks and clasps for secure closures",
-    image: "https://images.pexels.com/photos/10282805/pexels-photo-10282805.jpeg",
+    image: "https://images.pexels.com/photos/4792065/pexels-photo-4792065.jpeg",
     slug: "hooks",
   },
   {
@@ -45,8 +45,8 @@ export const products: Product[] = [
     description: "Set of 10 premium metal buttons with an antique brass finish. Perfect for jackets, coats, and formal wear. Each button features a unique embossed design that adds sophistication to any garment.",
     price: 12.99,
     images: [
-      "https://images.pexels.com/photos/5695831/pexels-photo-5695831.jpeg",
-      "https://images.pexels.com/photos/6447067/pexels-photo-6447067.jpeg"
+      "https://images.pexels.com/photos/6447067/pexels-photo-6447067.jpeg",
+      "https://images.pexels.com/photos/5695831/pexels-photo-5695831.jpeg"
     ],
     category: "cat-1",
     categoryName: "Buttons",
@@ -94,7 +94,7 @@ export const products: Product[] = [
     price: 7.99,
     images: [
       "https://images.pexels.com/photos/7580865/pexels-photo-7580865.jpeg",
-      "https://images.pexels.com/photos/14016564/pexels-photo-14016564.jpeg"
+      "https://images.pexels.com/photos/8801195/pexels-photo-8801195.jpeg"
     ],
     category: "cat-2",
     categoryName: "Zippers",
@@ -118,7 +118,7 @@ export const products: Product[] = [
     price: 11.99,
     images: [
       "https://images.pexels.com/photos/6185642/pexels-photo-6185642.jpeg",
-      "https://images.pexels.com/photos/8801195/pexels-photo-8801195.jpeg"
+      "https://images.pexels.com/photos/14016564/pexels-photo-14016564.jpeg"
     ],
     category: "cat-2",
     categoryName: "Zippers",
@@ -141,7 +141,8 @@ export const products: Product[] = [
     description: "Set of 20 pairs of hook and eye clasps, perfect for lingerie, blouses, and other garments requiring secure but discrete closures.",
     price: 5.99,
     images: [
-      "https://images.pexels.com/photos/10282805/pexels-photo-10282805.jpeg"
+      "https://images.pexels.com/photos/4792065/pexels-photo-4792065.jpeg",
+      "https://images.pexels.com/photos/6046378/pexels-photo-6046378.jpeg"
     ],
     category: "cat-3",
     categoryName: "Hooks & Clasps",
@@ -210,7 +211,7 @@ export const products: Product[] = [
     price: 15.99,
     images: [
       "https://images.pexels.com/photos/3735149/pexels-photo-3735149.jpeg",
-      "https://images.pexels.com/photos/10013067/pexels-photo-10013067.jpeg"
+      "https://images.pexels.com/photos/5695831/pexels-photo-5695831.jpeg"
     ],
     category: "cat-1",
     categoryName: "Buttons",
@@ -234,7 +235,7 @@ export const products: Product[] = [
     price: 19.99,
     images: [
       "https://images.pexels.com/photos/6447067/pexels-photo-6447067.jpeg",
-      "https://images.pexels.com/photos/5695831/pexels-photo-5695831.jpeg"
+      "https://images.pexels.com/photos/6046989/pexels-photo-6046989.jpeg"
     ],
     category: "cat-1",
     categoryName: "Buttons",

@@ -3,14 +3,25 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, ShoppingCart, X, Search, User, Heart } from "lucide-react";
+import { Menu, ShoppingCart, X, Search, User, Heart, LogOut } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useCart } from "@/lib/cart";
+import { useAuth } from "@/lib/auth";
+import { AuthModal } from "@/components/auth/AuthModal";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
@@ -25,8 +36,12 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authModalTab, setAuthModalTab] = useState<"login" | "signup">("login");
+  
   const pathname = usePathname();
   const cart = useCart();
+  const { user, signOut, loading } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -36,6 +51,19 @@ export default function Navbar() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
+
+  const openAuthModal = (tab: "login" | "signup") => {
+    setAuthModalTab(tab);
+    setAuthModalOpen(true);
+  };
 
   return (
     <motion.header
@@ -128,10 +156,64 @@ export default function Navbar() {
             </Badge>
           </Button>
 
-          {/* Account */}
-          <Button variant="ghost" size="icon" className="hidden sm:flex">
-            <User className="h-5 w-5" />
-          </Button>
+          {/* User Account */}
+          {!loading && (
+            <>
+              {user ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={user.photoURL || ""} alt={user.displayName || ""} />
+                        <AvatarFallback>
+                          {user.displayName?.charAt(0) || user.email?.charAt(0) || "U"}
+                        </AvatarFallback>
+                      </Avatar>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56" align="end" forceMount>
+                    <DropdownMenuLabel className="font-normal">
+                      <div className="flex flex-col space-y-1">
+                        <p className="text-sm font-medium leading-none">
+                          {user.displayName || "User"}
+                        </p>
+                        <p className="text-xs leading-none text-muted-foreground">
+                          {user.email}
+                        </p>
+                      </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem>
+                      <User className="mr-2 h-4 w-4" />
+                      <span>Profile</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <ShoppingCart className="mr-2 h-4 w-4" />
+                      <span>Orders</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <Heart className="mr-2 h-4 w-4" />
+                      <span>Wishlist</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleSignOut}>
+                      <LogOut className="mr-2 h-4 w-4" />
+                      <span>Log out</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <div className="hidden sm:flex items-center gap-2">
+                  <Button variant="ghost" size="sm" onClick={() => openAuthModal("login")}>
+                    Sign In
+                  </Button>
+                  <Button size="sm" onClick={() => openAuthModal("signup")}>
+                    Sign Up
+                  </Button>
+                </div>
+              )}
+            </>
+          )}
 
           <ThemeToggle />
 
@@ -193,12 +275,12 @@ export default function Navbar() {
                 <span className="sr-only">Close menu</span>
               </Button>
             </div>
-            
+
             <div className="flex-1 overflow-y-auto">
               <div className="p-4">
                 <Input placeholder="Search products..." className="mb-6" />
               </div>
-              
+
               <nav className="flex flex-col space-y-2 px-4">
                 {navLinks.map((link) => (
                   <motion.div
@@ -222,12 +304,41 @@ export default function Navbar() {
                   </motion.div>
                 ))}
               </nav>
-              
-              <div className="mt-8 flex justify-center gap-4 px-4">
-                <Button variant="outline" className="flex-1">
-                  <User className="mr-2 h-4 w-4" />
-                  Account
-                </Button>
+
+              <div className="mt-8 px-4">
+                {user ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={user.photoURL || ""} alt={user.displayName || ""} />
+                        <AvatarFallback>
+                          {user.displayName?.charAt(0) || user.email?.charAt(0) || "U"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-medium">{user.displayName || "User"}</p>
+                        <p className="text-sm text-muted-foreground">{user.email}</p>
+                      </div>
+                    </div>
+                    <Button variant="outline" className="w-full" onClick={handleSignOut}>
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Sign Out
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    <Button className="w-full" onClick={() => openAuthModal("signup")}>
+                      <User className="mr-2 h-4 w-4" />
+                      Sign Up
+                    </Button>
+                    <Button variant="outline" className="w-full" onClick={() => openAuthModal("login")}>
+                      Sign In
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-4 flex justify-center gap-4 px-4">
                 <Button variant="outline" className="flex-1">
                   <Heart className="mr-2 h-4 w-4" />
                   Wishlist
@@ -237,6 +348,12 @@ export default function Navbar() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        defaultTab={authModalTab}
+      />
     </motion.header>
   );
 }
