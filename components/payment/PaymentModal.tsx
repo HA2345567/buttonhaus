@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { initiatePayment, createRazorpayOrder } from "@/lib/razorpay";
 import { useCart } from "@/lib/cart";
+import { useAuth } from "@/lib/auth";
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -30,6 +31,18 @@ export function PaymentModal({ isOpen, onClose, total }: PaymentModalProps) {
     address: ""
   });
   const cart = useCart();
+  const { user } = useAuth();
+
+  // Pre-fill user info if logged in
+  useState(() => {
+    if (user) {
+      setCustomerInfo(prev => ({
+        ...prev,
+        name: user.displayName || "",
+        email: user.email || "",
+      }));
+    }
+  });
 
   const paymentMethods = [
     {
