@@ -53,23 +53,60 @@ export const loadRazorpay = (): Promise<boolean> => {
 };
 
 export const createRazorpayOrder = async (amount: number, currency: string = 'INR') => {
-  // In production, this would call your backend API
-  // For demo purposes, we'll simulate an order creation
-  return {
-    id: `order_${Date.now()}`,
-    amount: amount * 100, // Razorpay expects amount in paise
-    currency,
-    status: 'created'
-  };
+  try {
+    // In a real application, this would call your backend API
+    // For now, we'll create a mock order that works with Razorpay
+    const response = await fetch('/api/create-order', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        amount: amount * 100, // Convert to paise
+        currency,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to create order');
+    }
+
+    return await response.json();
+  } catch (error) {
+    // Fallback for demo purposes
+    console.warn('Using fallback order creation for demo');
+    return {
+      id: `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      amount: amount * 100, // Razorpay expects amount in paise
+      currency,
+      status: 'created'
+    };
+  }
 };
 
 export const initiatePayment = async (options: RazorpayOptions) => {
   const isLoaded = await loadRazorpay();
   
   if (!isLoaded) {
-    throw new Error('Razorpay SDK failed to load');
+    throw new Error('Razorpay SDK failed to load. Please check your internet connection.');
   }
 
-  const razorpay = new window.Razorpay(options);
-  razorpay.open();
+  return new Promise((resolve, reject) => {
+    const razorpayOptions = {
+      ...options,
+      modal: {
+        ondismiss: () => {
+          reject(new Error('Payment cancelled by user'));
+        }
+      }
+    };
+
+    const razorpay = new window.Razorpay(razorpayOptions);
+    
+    razorpay.on('payment.failed', (response: any) => {
+      reject(new Error(`Payment failed: ${response.error.description}`));
+    });
+
+    razorpay.open();
+  });
 };

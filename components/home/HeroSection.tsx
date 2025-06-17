@@ -10,9 +10,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 const heroImages = [
-  "https://images.pexels.com/photos/6044224/pexels-photo-6044224.jpeg",
-  "https://images.pexels.com/photos/5695831/pexels-photo-5695831.jpeg",
   "https://images.pexels.com/photos/6447067/pexels-photo-6447067.jpeg",
+  "https://images.pexels.com/photos/5695831/pexels-photo-5695831.jpeg",
+  "https://images.pexels.com/photos/7580865/pexels-photo-7580865.jpeg",
 ];
 
 const stats = [
@@ -112,7 +112,7 @@ export function HeroSection() {
             >
               <Link href="/categories">
                 <Play className="mr-2 h-5 w-5" />
-                Watch Story
+                Explore Categories
               </Link>
             </Button>
           </motion.div>

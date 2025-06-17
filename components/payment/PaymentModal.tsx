@@ -73,7 +73,7 @@ export function PaymentModal({ isOpen, onClose, total }: PaymentModalProps) {
 
       // Configure payment options
       const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_1234567890", // Replace with your key
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_KSJJ0i1nYo1VBl",
         amount: order.amount,
         currency: order.currency,
         name: "ButtonHaus",
@@ -84,7 +84,7 @@ export function PaymentModal({ isOpen, onClose, total }: PaymentModalProps) {
           console.log("Payment successful:", response);
           cart.clearCart();
           onClose();
-          alert("Payment successful! Your order has been placed.");
+          alert("Payment successful! Your order has been placed. Thank you for shopping with ButtonHaus!");
         },
         prefill: {
           name: customerInfo.name,
@@ -108,7 +108,7 @@ export function PaymentModal({ isOpen, onClose, total }: PaymentModalProps) {
       await initiatePayment(options);
     } catch (error) {
       console.error("Payment failed:", error);
-      alert("Payment failed. Please try again.");
+      alert(`Payment failed: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`);
     } finally {
       setIsProcessing(false);
     }
@@ -227,7 +227,7 @@ export function PaymentModal({ isOpen, onClose, total }: PaymentModalProps) {
           {/* Security Notice */}
           <div className="flex items-center gap-2 text-sm text-muted-foreground bg-green-50 dark:bg-green-950/20 p-3 rounded-lg">
             <Lock className="h-4 w-4 text-green-600" />
-            <span>Your payment information is encrypted and secure</span>
+            <span>Your payment information is encrypted and secure with Razorpay</span>
           </div>
 
           {/* Payment Button */}
