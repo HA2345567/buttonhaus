@@ -11,10 +11,6 @@ const nextConfig = {
   env: {
     NEXT_PUBLIC_RAZORPAY_KEY_ID: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
   },
-  // Enable experimental features for better performance
-  experimental: {
-    optimizeCss: false, // Disable to avoid critters dependency issue
-  },
   // Optimize for production
   swcMinify: true,
   compress: true,

@@ -4,18 +4,34 @@ export async function POST(request: NextRequest) {
   try {
     const { amount, currency = 'INR' } = await request.json();
 
-    // In a real application, you would:
-    // 1. Validate the request
-    // 2. Create an order using Razorpay's server-side API
-    // 3. Store order details in your database
+    // Validate amount
+    if (!amount || amount <= 0) {
+      return NextResponse.json(
+        { error: 'Invalid amount' },
+        { status: 400 }
+      );
+    }
+
+    // In production, you would use Razorpay's server-side API:
+    // const Razorpay = require('razorpay');
+    // const razorpay = new Razorpay({
+    //   key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+    //   key_secret: process.env.RAZORPAY_KEY_SECRET,
+    // });
+    // const order = await razorpay.orders.create({
+    //   amount: amount,
+    //   currency: currency,
+    //   receipt: `receipt_${Date.now()}`,
+    // });
     
-    // For demo purposes, we'll create a mock order
+    // For demo purposes, create a mock order
     const order = {
       id: `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      amount: amount, // Amount should already be in paise
+      amount: Math.round(amount),
       currency,
       status: 'created',
-      created_at: Math.floor(Date.now() / 1000)
+      created_at: Math.floor(Date.now() / 1000),
+      receipt: `receipt_${Date.now()}`
     };
 
     return NextResponse.json(order);

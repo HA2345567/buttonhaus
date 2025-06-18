@@ -54,15 +54,13 @@ export const loadRazorpay = (): Promise<boolean> => {
 
 export const createRazorpayOrder = async (amount: number, currency: string = 'INR') => {
   try {
-    // In a real application, this would call your backend API
-    // For now, we'll create a mock order that works with Razorpay
     const response = await fetch('/api/create-order', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        amount: amount * 100, // Convert to paise
+        amount: Math.round(amount * 100), // Convert to paise and ensure integer
         currency,
       }),
     });
@@ -73,11 +71,10 @@ export const createRazorpayOrder = async (amount: number, currency: string = 'IN
 
     return await response.json();
   } catch (error) {
-    // Fallback for demo purposes
     console.warn('Using fallback order creation for demo');
     return {
       id: `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      amount: amount * 100, // Razorpay expects amount in paise
+      amount: Math.round(amount * 100),
       currency,
       status: 'created'
     };
@@ -108,5 +105,6 @@ export const initiatePayment = async (options: RazorpayOptions) => {
     });
 
     razorpay.open();
+    resolve(true);
   });
 };
