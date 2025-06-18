@@ -1,18 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { CreditCard, Smartphone, Building, Wallet, X, Shield, Lock, AlertCircle } from "lucide-react";
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { CheckCircle, Package, Truck, Mail, Phone } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { initiatePayment, createRazorpayOrder, loadRazorpay } from "@/lib/razorpay";
 import { useCart } from "@/lib/cart";
 import { useAuth } from "@/lib/auth";
 
@@ -23,21 +19,21 @@ interface PaymentModalProps {
 }
 
 export function PaymentModal({ isOpen, onClose, total }: PaymentModalProps) {
-  const [paymentMethod, setPaymentMethod] = useState("upi");
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isRazorpayLoaded, setIsRazorpayLoaded] = useState(false);
-  const [loadingError, setLoadingError] = useState<string | null>(null);
+  const [orderPlaced, setOrderPlaced] = useState(false);
   const [customerInfo, setCustomerInfo] = useState({
     name: "",
     email: "",
     phone: "",
-    address: ""
+    address: "",
+    city: "",
+    pincode: ""
   });
   const cart = useCart();
   const { user } = useAuth();
 
   // Pre-fill user info if logged in
-  useEffect(() => {
+  useState(() => {
     if (user) {
       setCustomerInfo(prev => ({
         ...prev,
@@ -45,57 +41,7 @@ export function PaymentModal({ isOpen, onClose, total }: PaymentModalProps) {
         email: user.email || "",
       }));
     }
-  }, [user]);
-
-  // Load Razorpay SDK when modal opens
-  useEffect(() => {
-    if (isOpen && !isRazorpayLoaded) {
-      console.log('Modal opened, loading Razorpay...');
-      setLoadingError(null);
-      
-      loadRazorpay()
-        .then((loaded) => {
-          console.log('Razorpay load result:', loaded);
-          setIsRazorpayLoaded(loaded);
-          if (!loaded) {
-            setLoadingError('Failed to load payment system. Please check your internet connection.');
-          }
-        })
-        .catch((error) => {
-          console.error('Error loading Razorpay:', error);
-          setLoadingError('Failed to load payment system. Please try again.');
-          setIsRazorpayLoaded(false);
-        });
-    }
-  }, [isOpen, isRazorpayLoaded]);
-
-  const paymentMethods = [
-    {
-      id: "upi",
-      name: "UPI",
-      icon: Smartphone,
-      description: "Pay using UPI apps like GPay, PhonePe, Paytm",
-      popular: true
-    },
-    {
-      id: "card",
-      name: "Credit/Debit Card",
-      icon: CreditCard,
-      description: "Visa, Mastercard, RuPay, American Express"
-    },
-    {
-      id: "netbanking",
-      name: "Net Banking",
-      icon: Building,
-      description: "All major banks supported"
-    },
-    {
-      id: "wallet",
-      name: "Wallets",
-      icon: Wallet,
-      description: "Paytm, PhonePe, Amazon Pay, etc."
-    }
-  ];
+  });
 
   const validateForm = () => {
     if (!customerInfo.name.trim()) {
@@ -110,165 +56,113 @@ export function PaymentModal({ isOpen, onClose, total }: PaymentModalProps) {
       alert("Please enter your phone number");
       return false;
     }
-    if (!/^\d{10}$/.test(customerInfo.phone.replace(/\D/g, ''))) {
-      alert("Please enter a valid 10-digit phone number");
+    if (!customerInfo.address.trim()) {
+      alert("Please enter your address");
       return false;
     }
-    if (!/\S+@\S+\.\S+/.test(customerInfo.email)) {
-      alert("Please enter a valid email address");
+    if (!customerInfo.city.trim()) {
+      alert("Please enter your city");
+      return false;
+    }
+    if (!customerInfo.pincode.trim()) {
+      alert("Please enter your pincode");
       return false;
     }
     return true;
   };
 
-  const handlePayment = async () => {
+  const handlePlaceOrder = async () => {
     if (!validateForm()) {
-      return;
-    }
-
-    if (!isRazorpayLoaded) {
-      alert("Payment system is still loading. Please wait a moment and try again.");
-      return;
-    }
-
-    if (typeof window === 'undefined' || !window.Razorpay) {
-      alert("Payment system is not available. Please refresh the page and try again.");
       return;
     }
 
     setIsProcessing(true);
 
-    try {
-      console.log('Starting payment process for amount:', total);
-      
-      // Create order
-      const order = await createRazorpayOrder(total);
-      console.log('Order created:', order);
+    // Simulate order processing
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
-      // Use your Razorpay test key
-      const razorpayKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_nMGeAK7esjjWzj';
-      console.log('Using Razorpay key:', razorpayKey.substring(0, 10) + '...');
+    setIsProcessing(false);
+    setOrderPlaced(true);
 
-      // Configure payment options
-      const options = {
-        key: razorpayKey,
-        amount: order.amount,
-        currency: order.currency,
-        name: "ButtonHaus",
-        description: `Payment for ${cart.totalItems()} items`,
-        order_id: order.id,
-        handler: (response: any) => {
-          // Payment successful
-          console.log("Payment successful:", response);
-          setIsProcessing(false);
-          cart.clearCart();
-          onClose();
-          
-          // Show success message
-          setTimeout(() => {
-            alert("🎉 Payment successful! Your order has been placed. Thank you for shopping with ButtonHaus!");
-          }, 500);
-        },
-        prefill: {
-          name: customerInfo.name,
-          email: customerInfo.email,
-          contact: customerInfo.phone,
-        },
-        notes: {
-          address: customerInfo.address || "Not provided",
-        },
-        theme: {
-          color: "#000000",
-        },
-        method: {
-          upi: paymentMethod === "upi",
-          card: paymentMethod === "card",
-          netbanking: paymentMethod === "netbanking",
-          wallet: paymentMethod === "wallet",
-        },
-        modal: {
-          ondismiss: () => {
-            console.log('Payment modal dismissed');
-            setIsProcessing(false);
-          }
-        }
-      };
-
-      console.log('Initiating payment with Razorpay...');
-      await initiatePayment(options);
-    } catch (error: any) {
-      console.error("Payment failed:", error);
-      setIsProcessing(false);
-      
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      
-      // Don't show alert for user cancellation
-      if (!errorMessage.includes('cancelled by user')) {
-        alert(`❌ Payment failed: ${errorMessage}. Please try again.`);
-      }
-    }
+    // Clear cart after successful order
+    setTimeout(() => {
+      cart.clearCart();
+      setOrderPlaced(false);
+      onClose();
+    }, 3000);
   };
 
-  const retryLoadRazorpay = () => {
-    setLoadingError(null);
-    setIsRazorpayLoaded(false);
-    loadRazorpay()
-      .then(setIsRazorpayLoaded)
-      .catch(() => {
-        setLoadingError('Failed to load payment system. Please check your internet connection.');
-      });
-  };
+  if (orderPlaced) {
+    return (
+      <Dialog open={isOpen} onOpenChange={() => {}}>
+        <DialogContent className="max-w-md">
+          <div className="text-center py-8">
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ duration: 0.5, type: "spring" }}
+              className="inline-flex p-4 rounded-full bg-green-100 dark:bg-green-900/20 mb-6"
+            >
+              <CheckCircle className="h-12 w-12 text-green-600" />
+            </motion.div>
+            
+            <h2 className="text-2xl font-bold mb-4">Order Placed Successfully!</h2>
+            <p className="text-muted-foreground mb-6">
+              Thank you for your order. We'll send you a confirmation email shortly.
+            </p>
+            
+            <div className="space-y-3 text-sm">
+              <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                <Package className="h-4 w-4" />
+                <span>Order will be processed within 24 hours</span>
+              </div>
+              <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                <Truck className="h-4 w-4" />
+                <span>Estimated delivery: 3-5 business days</span>
+              </div>
+              <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                <Mail className="h-4 w-4" />
+                <span>Confirmation email sent to {customerInfo.email}</span>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5 text-green-600" />
-            Secure Payment
+            <Package className="h-5 w-5 text-primary" />
+            Complete Your Order
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Razorpay Loading Status */}
-          {!isRazorpayLoaded && !loadingError && (
-            <Alert>
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                className="h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full"
-              />
-              <AlertDescription>
-                Loading secure payment system...
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {/* Loading Error */}
-          {loadingError && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription className="flex items-center justify-between">
-                <span>{loadingError}</span>
-                <Button variant="outline" size="sm" onClick={retryLoadRazorpay}>
-                  Retry
-                </Button>
-              </AlertDescription>
-            </Alert>
-          )}
-
           {/* Order Summary */}
           <div className="bg-muted/50 rounded-lg p-4">
             <h3 className="font-semibold mb-2">Order Summary</h3>
-            <div className="flex justify-between items-center">
-              <span>{cart.totalItems()} items</span>
-              <span className="font-semibold">₹{total.toFixed(2)}</span>
+            <div className="space-y-2">
+              {cart.items.map((item) => (
+                <div key={item.id} className="flex justify-between text-sm">
+                  <span>{item.name} × {item.quantity}</span>
+                  <span>₹{(item.price * item.quantity).toFixed(2)}</span>
+                </div>
+              ))}
+              <Separator />
+              <div className="flex justify-between font-semibold">
+                <span>Total ({cart.totalItems()} items)</span>
+                <span>₹{total.toFixed(2)}</span>
+              </div>
             </div>
           </div>
 
           {/* Customer Information */}
           <div className="space-y-4">
-            <h3 className="font-semibold">Customer Information</h3>
+            <h3 className="font-semibold">Delivery Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="name">Full Name *</Label>
@@ -297,17 +191,38 @@ export function PaymentModal({ isOpen, onClose, total }: PaymentModalProps) {
                   id="phone"
                   value={customerInfo.phone}
                   onChange={(e) => setCustomerInfo(prev => ({ ...prev, phone: e.target.value }))}
-                  placeholder="Enter your 10-digit phone number"
+                  placeholder="Enter your phone number"
                   required
                 />
               </div>
               <div>
-                <Label htmlFor="address">Address</Label>
+                <Label htmlFor="pincode">Pincode *</Label>
+                <Input
+                  id="pincode"
+                  value={customerInfo.pincode}
+                  onChange={(e) => setCustomerInfo(prev => ({ ...prev, pincode: e.target.value }))}
+                  placeholder="Enter pincode"
+                  required
+                />
+              </div>
+              <div className="md:col-span-2">
+                <Label htmlFor="address">Complete Address *</Label>
                 <Input
                   id="address"
                   value={customerInfo.address}
                   onChange={(e) => setCustomerInfo(prev => ({ ...prev, address: e.target.value }))}
-                  placeholder="Enter your address (optional)"
+                  placeholder="House/Flat No., Street, Area"
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="city">City *</Label>
+                <Input
+                  id="city"
+                  value={customerInfo.city}
+                  onChange={(e) => setCustomerInfo(prev => ({ ...prev, city: e.target.value }))}
+                  placeholder="Enter your city"
+                  required
                 />
               </div>
             </div>
@@ -315,64 +230,26 @@ export function PaymentModal({ isOpen, onClose, total }: PaymentModalProps) {
 
           <Separator />
 
-          {/* Payment Methods */}
-          <div className="space-y-4">
-            <h3 className="font-semibold">Choose Payment Method</h3>
-            <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {paymentMethods.map((method) => {
-                  const Icon = method.icon;
-                  return (
-                    <motion.div
-                      key={method.id}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      <Label
-                        htmlFor={method.id}
-                        className={`flex items-center space-x-3 border rounded-lg p-4 cursor-pointer transition-colors ${
-                          paymentMethod === method.id
-                            ? "border-primary bg-primary/5"
-                            : "border-border hover:border-primary/50"
-                        }`}
-                      >
-                        <RadioGroupItem value={method.id} id={method.id} />
-                        <Icon className="h-5 w-5" />
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">{method.name}</span>
-                            {method.popular && (
-                              <Badge variant="secondary" className="text-xs">
-                                Popular
-                              </Badge>
-                            )}
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            {method.description}
-                          </p>
-                        </div>
-                      </Label>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            </RadioGroup>
+          {/* Payment Method Info */}
+          <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg">
+            <h3 className="font-semibold mb-2 flex items-center gap-2">
+              <Phone className="h-4 w-4" />
+              Payment Method
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              Cash on Delivery (COD) - Pay when your order arrives at your doorstep. 
+              No advance payment required.
+            </p>
           </div>
 
-          {/* Security Notice */}
-          <div className="flex items-center gap-2 text-sm text-muted-foreground bg-green-50 dark:bg-green-950/20 p-3 rounded-lg">
-            <Lock className="h-4 w-4 text-green-600" />
-            <span>Your payment information is encrypted and secure with Razorpay</span>
-          </div>
-
-          {/* Payment Button */}
+          {/* Order Button */}
           <div className="flex gap-3">
             <Button variant="outline" onClick={onClose} className="flex-1" disabled={isProcessing}>
               Cancel
             </Button>
             <Button
-              onClick={handlePayment}
-              disabled={isProcessing || !isRazorpayLoaded || !!loadingError}
+              onClick={handlePlaceOrder}
+              disabled={isProcessing}
               className="flex-1"
             >
               {isProcessing ? (
@@ -382,27 +259,31 @@ export function PaymentModal({ isOpen, onClose, total }: PaymentModalProps) {
                     transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                     className="h-4 w-4 border-2 border-white border-t-transparent rounded-full"
                   />
-                  Processing...
+                  Processing Order...
                 </div>
-              ) : !isRazorpayLoaded ? (
-                "Loading..."
               ) : (
-                `Pay ₹${total.toFixed(2)}`
+                `Place Order - ₹${total.toFixed(2)}`
               )}
             </Button>
           </div>
 
-          {/* Test Card Info for Demo */}
-          {isRazorpayLoaded && (
-            <div className="text-xs text-muted-foreground bg-yellow-50 dark:bg-yellow-950/20 p-3 rounded-lg">
-              <p className="font-medium mb-1">🧪 Test Mode - Use these test details:</p>
-              <p>• Card: 4111 1111 1111 1111</p>
-              <p>• CVV: Any 3 digits</p>
-              <p>• Expiry: Any future date</p>
-              <p>• UPI: success@razorpay (for successful payment)</p>
-              <p>• UPI: failure@razorpay (for failed payment)</p>
+          {/* Delivery Info */}
+          <div className="text-xs text-muted-foreground bg-muted/30 p-3 rounded-lg">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+              <div className="flex items-center gap-1">
+                <Package className="h-3 w-3" />
+                <span>Free packaging</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Truck className="h-3 w-3" />
+                <span>3-5 day delivery</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <CheckCircle className="h-3 w-3" />
+                <span>Quality guaranteed</span>
+              </div>
             </div>
-          )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>
