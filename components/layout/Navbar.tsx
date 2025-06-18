@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, ShoppingCart, X, Search, User, Heart, LogOut } from "lucide-react";
+import { Menu, ShoppingCart, X, Search, User, Heart, LogOut, Package } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useCart } from "@/lib/cart";
 import { useWishlist } from "@/lib/wishlist";
+import { useOrders } from "@/lib/orders";
 import { useAuth } from "@/lib/auth";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { cn } from "@/lib/utils";
@@ -44,6 +45,7 @@ export default function Navbar() {
   const pathname = usePathname();
   const cart = useCart();
   const wishlist = useWishlist();
+  const orders = useOrders();
   const { user, signOut, loading } = useAuth();
 
   useEffect(() => {
@@ -209,14 +211,16 @@ export default function Navbar() {
                       <User className="mr-2 h-4 w-4" />
                       <span>Profile</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <ShoppingCart className="mr-2 h-4 w-4" />
-                      <span>Orders</span>
+                    <DropdownMenuItem asChild>
+                      <Link href="/orders">
+                        <Package className="mr-2 h-4 w-4" />
+                        <span>Orders ({orders.totalOrders()})</span>
+                      </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link href="/wishlist">
                         <Heart className="mr-2 h-4 w-4" />
-                        <span>Wishlist</span>
+                        <span>Wishlist ({wishlist.totalItems()})</span>
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
@@ -367,8 +371,14 @@ export default function Navbar() {
               )}
 
               {isClient && (
-                <div className="mt-4 flex justify-center gap-4 px-4">
-                  <Button variant="outline" className="flex-1" asChild>
+                <div className="mt-4 flex flex-col gap-2 px-4">
+                  <Button variant="outline" className="w-full" asChild>
+                    <Link href="/orders" onClick={() => setMobileMenuOpen(false)}>
+                      <Package className="mr-2 h-4 w-4" />
+                      Orders ({orders.totalOrders()})
+                    </Link>
+                  </Button>
+                  <Button variant="outline" className="w-full" asChild>
                     <Link href="/wishlist" onClick={() => setMobileMenuOpen(false)}>
                       <Heart className="mr-2 h-4 w-4" />
                       Wishlist ({wishlist.totalItems()})
