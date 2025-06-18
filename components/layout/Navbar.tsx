@@ -39,11 +39,16 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalTab, setAuthModalTab] = useState<"login" | "signup">("login");
+  const [isClient, setIsClient] = useState(false);
   
   const pathname = usePathname();
   const cart = useCart();
   const wishlist = useWishlist();
   const { user, signOut, loading } = useAuth();
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -151,28 +156,30 @@ export default function Navbar() {
           </AnimatePresence>
 
           {/* Wishlist */}
-          <Link href="/wishlist">
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button variant="ghost" size="icon" className="relative hidden sm:flex">
-                <Heart className="h-5 w-5" />
-                <AnimatePresence>
-                  {wishlist.totalItems() > 0 && (
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      exit={{ scale: 0 }}
-                      className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] text-white font-medium"
-                    >
-                      {wishlist.totalItems()}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </Button>
-            </motion.div>
-          </Link>
+          {isClient && (
+            <Link href="/wishlist">
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button variant="ghost" size="icon" className="relative hidden sm:flex">
+                  <Heart className="h-5 w-5" />
+                  <AnimatePresence>
+                    {wishlist.totalItems() > 0 && (
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        exit={{ scale: 0 }}
+                        className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] text-white font-medium"
+                      >
+                        {wishlist.totalItems()}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </Button>
+              </motion.div>
+            </Link>
+          )}
 
           {/* User Account */}
-          {!loading && (
+          {isClient && !loading && (
             <>
               {user ? (
                 <DropdownMenu>
@@ -235,25 +242,27 @@ export default function Navbar() {
           <ThemeToggle />
 
           {/* Cart */}
-          <Link href="/cart">
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button variant="outline" size="icon" className="relative">
-                <ShoppingCart className="h-5 w-5" />
-                <AnimatePresence>
-                  {cart.totalItems() > 0 && (
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      exit={{ scale: 0 }}
-                      className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground font-medium"
-                    >
-                      {cart.totalItems()}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </Button>
-            </motion.div>
-          </Link>
+          {isClient && (
+            <Link href="/cart">
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button variant="outline" size="icon" className="relative">
+                  <ShoppingCart className="h-5 w-5" />
+                  <AnimatePresence>
+                    {cart.totalItems() > 0 && (
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        exit={{ scale: 0 }}
+                        className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground font-medium"
+                      >
+                        {cart.totalItems()}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </Button>
+              </motion.div>
+            </Link>
+          )}
 
           <Button
             variant="ghost"
@@ -322,57 +331,63 @@ export default function Navbar() {
                 ))}
               </nav>
 
-              <div className="mt-8 px-4">
-                {user ? (
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage src={user.photoURL || ""} alt={user.displayName || ""} />
-                        <AvatarFallback>
-                          {user.displayName?.charAt(0) || user.email?.charAt(0) || "U"}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-medium">{user.displayName || "User"}</p>
-                        <p className="text-sm text-muted-foreground">{user.email}</p>
+              {isClient && (
+                <div className="mt-8 px-4">
+                  {user ? (
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src={user.photoURL || ""} alt={user.displayName || ""} />
+                          <AvatarFallback>
+                            {user.displayName?.charAt(0) || user.email?.charAt(0) || "U"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium">{user.displayName || "User"}</p>
+                          <p className="text-sm text-muted-foreground">{user.email}</p>
+                        </div>
                       </div>
+                      <Button variant="outline" className="w-full" onClick={handleSignOut}>
+                        <LogOut className="mr-2 h-4 w-4" />
+                        Sign Out
+                      </Button>
                     </div>
-                    <Button variant="outline" className="w-full" onClick={handleSignOut}>
-                      <LogOut className="mr-2 h-4 w-4" />
-                      Sign Out
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-2">
-                    <Button className="w-full" onClick={() => openAuthModal("signup")}>
-                      <User className="mr-2 h-4 w-4" />
-                      Sign Up
-                    </Button>
-                    <Button variant="outline" className="w-full" onClick={() => openAuthModal("login")}>
-                      Sign In
-                    </Button>
-                  </div>
-                )}
-              </div>
+                  ) : (
+                    <div className="flex flex-col gap-2">
+                      <Button className="w-full" onClick={() => openAuthModal("signup")}>
+                        <User className="mr-2 h-4 w-4" />
+                        Sign Up
+                      </Button>
+                      <Button variant="outline" className="w-full" onClick={() => openAuthModal("login")}>
+                        Sign In
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
 
-              <div className="mt-4 flex justify-center gap-4 px-4">
-                <Button variant="outline" className="flex-1" asChild>
-                  <Link href="/wishlist" onClick={() => setMobileMenuOpen(false)}>
-                    <Heart className="mr-2 h-4 w-4" />
-                    Wishlist ({wishlist.totalItems()})
-                  </Link>
-                </Button>
-              </div>
+              {isClient && (
+                <div className="mt-4 flex justify-center gap-4 px-4">
+                  <Button variant="outline" className="flex-1" asChild>
+                    <Link href="/wishlist" onClick={() => setMobileMenuOpen(false)}>
+                      <Heart className="mr-2 h-4 w-4" />
+                      Wishlist ({wishlist.totalItems()})
+                    </Link>
+                  </Button>
+                </div>
+              )}
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <AuthModal
-        isOpen={authModalOpen}
-        onClose={() => setAuthModalOpen(false)}
-        defaultTab={authModalTab}
-      />
+      {isClient && (
+        <AuthModal
+          isOpen={authModalOpen}
+          onClose={() => setAuthModalOpen(false)}
+          defaultTab={authModalTab}
+        />
+      )}
     </motion.header>
   );
 }
