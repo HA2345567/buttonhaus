@@ -101,7 +101,7 @@ export default function AboutPage() {
             <div className="relative aspect-[4/3] rounded-2xl overflow-hidden border shadow-lg">
               <Image
                 src="https://images.pexels.com/photos/6447067/pexels-photo-6447067.jpeg"
-                alt="ButtonHaus workshop"
+                alt="ButtonHaus workshop with various garment accessories"
                 fill
                 className="object-cover"
               />
