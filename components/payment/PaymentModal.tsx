@@ -123,11 +123,8 @@ export function PaymentModal({ isOpen, onClose, total }: PaymentModalProps) {
       const order = await createRazorpayOrder(total);
       console.log('Order created:', order);
 
-      // Get Razorpay key
-      const razorpayKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
-      if (!razorpayKey) {
-        throw new Error('Razorpay key not configured');
-      }
+      // Use your Razorpay test key
+      const razorpayKey = 'rzp_test_nMGeAK7esjjWzj';
 
       // Configure payment options
       const options = {
@@ -347,6 +344,7 @@ export function PaymentModal({ isOpen, onClose, total }: PaymentModalProps) {
             <p>• CVV: Any 3 digits</p>
             <p>• Expiry: Any future date</p>
             <p>• UPI: success@razorpay (for successful payment)</p>
+            <p>• UPI: failure@razorpay (for failed payment)</p>
           </div>
         </div>
       </DialogContent>
