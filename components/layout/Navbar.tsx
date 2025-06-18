@@ -20,6 +20,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useCart } from "@/lib/cart";
+import { useWishlist } from "@/lib/wishlist";
 import { useAuth } from "@/lib/auth";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { cn } from "@/lib/utils";
@@ -41,6 +42,7 @@ export default function Navbar() {
   
   const pathname = usePathname();
   const cart = useCart();
+  const wishlist = useWishlist();
   const { user, signOut, loading } = useAuth();
 
   useEffect(() => {
@@ -149,12 +151,25 @@ export default function Navbar() {
           </AnimatePresence>
 
           {/* Wishlist */}
-          <Button variant="ghost" size="icon" className="relative hidden sm:flex">
-            <Heart className="h-5 w-5" />
-            <Badge className="absolute -right-1 -top-1 h-5 w-5 flex items-center justify-center p-0 text-[10px]">
-              0
-            </Badge>
-          </Button>
+          <Link href="/wishlist">
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Button variant="ghost" size="icon" className="relative hidden sm:flex">
+                <Heart className="h-5 w-5" />
+                <AnimatePresence>
+                  {wishlist.totalItems() > 0 && (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      exit={{ scale: 0 }}
+                      className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] text-white font-medium"
+                    >
+                      {wishlist.totalItems()}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </Button>
+            </motion.div>
+          </Link>
 
           {/* User Account */}
           {!loading && (
@@ -191,9 +206,11 @@ export default function Navbar() {
                       <ShoppingCart className="mr-2 h-4 w-4" />
                       <span>Orders</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <Heart className="mr-2 h-4 w-4" />
-                      <span>Wishlist</span>
+                    <DropdownMenuItem asChild>
+                      <Link href="/wishlist">
+                        <Heart className="mr-2 h-4 w-4" />
+                        <span>Wishlist</span>
+                      </Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleSignOut}>
@@ -339,9 +356,11 @@ export default function Navbar() {
               </div>
 
               <div className="mt-4 flex justify-center gap-4 px-4">
-                <Button variant="outline" className="flex-1">
-                  <Heart className="mr-2 h-4 w-4" />
-                  Wishlist
+                <Button variant="outline" className="flex-1" asChild>
+                  <Link href="/wishlist" onClick={() => setMobileMenuOpen(false)}>
+                    <Heart className="mr-2 h-4 w-4" />
+                    Wishlist ({wishlist.totalItems()})
+                  </Link>
                 </Button>
               </div>
             </div>
