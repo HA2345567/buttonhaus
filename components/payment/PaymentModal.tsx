@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CreditCard, Smartphone, Building, Wallet, X, Shield, Lock } from "lucide-react";
+import { CreditCard, Smartphone, Building, Wallet, X, Shield, Lock, AlertCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { initiatePayment, createRazorpayOrder, loadRazorpay } from "@/lib/razorpay";
 import { useCart } from "@/lib/cart";
 import { useAuth } from "@/lib/auth";
@@ -25,6 +26,7 @@ export function PaymentModal({ isOpen, onClose, total }: PaymentModalProps) {
   const [paymentMethod, setPaymentMethod] = useState("upi");
   const [isProcessing, setIsProcessing] = useState(false);
   const [isRazorpayLoaded, setIsRazorpayLoaded] = useState(false);
+  const [loadingError, setLoadingError] = useState<string | null>(null);
   const [customerInfo, setCustomerInfo] = useState({
     name: "",
     email: "",
@@ -47,10 +49,25 @@ export function PaymentModal({ isOpen, onClose, total }: PaymentModalProps) {
 
   // Load Razorpay SDK when modal opens
   useEffect(() => {
-    if (isOpen) {
-      loadRazorpay().then(setIsRazorpayLoaded);
+    if (isOpen && !isRazorpayLoaded) {
+      console.log('Modal opened, loading Razorpay...');
+      setLoadingError(null);
+      
+      loadRazorpay()
+        .then((loaded) => {
+          console.log('Razorpay load result:', loaded);
+          setIsRazorpayLoaded(loaded);
+          if (!loaded) {
+            setLoadingError('Failed to load payment system. Please check your internet connection.');
+          }
+        })
+        .catch((error) => {
+          console.error('Error loading Razorpay:', error);
+          setLoadingError('Failed to load payment system. Please try again.');
+          setIsRazorpayLoaded(false);
+        });
     }
-  }, [isOpen]);
+  }, [isOpen, isRazorpayLoaded]);
 
   const paymentMethods = [
     {
@@ -110,7 +127,12 @@ export function PaymentModal({ isOpen, onClose, total }: PaymentModalProps) {
     }
 
     if (!isRazorpayLoaded) {
-      alert("Payment system is loading. Please wait a moment and try again.");
+      alert("Payment system is still loading. Please wait a moment and try again.");
+      return;
+    }
+
+    if (typeof window === 'undefined' || !window.Razorpay) {
+      alert("Payment system is not available. Please refresh the page and try again.");
       return;
     }
 
@@ -124,7 +146,8 @@ export function PaymentModal({ isOpen, onClose, total }: PaymentModalProps) {
       console.log('Order created:', order);
 
       // Use your Razorpay test key
-      const razorpayKey = 'rzp_test_nMGeAK7esjjWzj';
+      const razorpayKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_nMGeAK7esjjWzj';
+      console.log('Using Razorpay key:', razorpayKey.substring(0, 10) + '...');
 
       // Configure payment options
       const options = {
@@ -137,9 +160,14 @@ export function PaymentModal({ isOpen, onClose, total }: PaymentModalProps) {
         handler: (response: any) => {
           // Payment successful
           console.log("Payment successful:", response);
+          setIsProcessing(false);
           cart.clearCart();
           onClose();
-          alert("🎉 Payment successful! Your order has been placed. Thank you for shopping with ButtonHaus!");
+          
+          // Show success message
+          setTimeout(() => {
+            alert("🎉 Payment successful! Your order has been placed. Thank you for shopping with ButtonHaus!");
+          }, 500);
         },
         prefill: {
           name: customerInfo.name,
@@ -166,15 +194,29 @@ export function PaymentModal({ isOpen, onClose, total }: PaymentModalProps) {
         }
       };
 
-      console.log('Initiating payment with options:', options);
+      console.log('Initiating payment with Razorpay...');
       await initiatePayment(options);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Payment failed:", error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      alert(`❌ Payment failed: ${errorMessage}. Please try again.`);
-    } finally {
       setIsProcessing(false);
+      
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      
+      // Don't show alert for user cancellation
+      if (!errorMessage.includes('cancelled by user')) {
+        alert(`❌ Payment failed: ${errorMessage}. Please try again.`);
+      }
     }
+  };
+
+  const retryLoadRazorpay = () => {
+    setLoadingError(null);
+    setIsRazorpayLoaded(false);
+    loadRazorpay()
+      .then(setIsRazorpayLoaded)
+      .catch(() => {
+        setLoadingError('Failed to load payment system. Please check your internet connection.');
+      });
   };
 
   return (
@@ -189,17 +231,30 @@ export function PaymentModal({ isOpen, onClose, total }: PaymentModalProps) {
 
         <div className="space-y-6">
           {/* Razorpay Loading Status */}
-          {!isRazorpayLoaded && (
-            <div className="bg-blue-50 dark:bg-blue-950/20 p-3 rounded-lg">
-              <div className="flex items-center gap-2 text-blue-600">
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                  className="h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full"
-                />
-                <span className="text-sm">Loading payment system...</span>
-              </div>
-            </div>
+          {!isRazorpayLoaded && !loadingError && (
+            <Alert>
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                className="h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full"
+              />
+              <AlertDescription>
+                Loading secure payment system...
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Loading Error */}
+          {loadingError && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="flex items-center justify-between">
+                <span>{loadingError}</span>
+                <Button variant="outline" size="sm" onClick={retryLoadRazorpay}>
+                  Retry
+                </Button>
+              </AlertDescription>
+            </Alert>
           )}
 
           {/* Order Summary */}
@@ -317,7 +372,7 @@ export function PaymentModal({ isOpen, onClose, total }: PaymentModalProps) {
             </Button>
             <Button
               onClick={handlePayment}
-              disabled={isProcessing || !isRazorpayLoaded}
+              disabled={isProcessing || !isRazorpayLoaded || !!loadingError}
               className="flex-1"
             >
               {isProcessing ? (
@@ -338,14 +393,16 @@ export function PaymentModal({ isOpen, onClose, total }: PaymentModalProps) {
           </div>
 
           {/* Test Card Info for Demo */}
-          <div className="text-xs text-muted-foreground bg-yellow-50 dark:bg-yellow-950/20 p-3 rounded-lg">
-            <p className="font-medium mb-1">🧪 Test Mode - Use these test details:</p>
-            <p>• Card: 4111 1111 1111 1111</p>
-            <p>• CVV: Any 3 digits</p>
-            <p>• Expiry: Any future date</p>
-            <p>• UPI: success@razorpay (for successful payment)</p>
-            <p>• UPI: failure@razorpay (for failed payment)</p>
-          </div>
+          {isRazorpayLoaded && (
+            <div className="text-xs text-muted-foreground bg-yellow-50 dark:bg-yellow-950/20 p-3 rounded-lg">
+              <p className="font-medium mb-1">🧪 Test Mode - Use these test details:</p>
+              <p>• Card: 4111 1111 1111 1111</p>
+              <p>• CVV: Any 3 digits</p>
+              <p>• Expiry: Any future date</p>
+              <p>• UPI: success@razorpay (for successful payment)</p>
+              <p>• UPI: failure@razorpay (for failed payment)</p>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>

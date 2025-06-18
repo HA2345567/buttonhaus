@@ -4,8 +4,11 @@ export async function POST(request: NextRequest) {
   try {
     const { amount, currency = 'INR' } = await request.json();
 
+    console.log('Received order creation request:', { amount, currency });
+
     // Validate amount
     if (!amount || amount <= 0) {
+      console.error('Invalid amount:', amount);
       return NextResponse.json(
         { error: 'Invalid amount' },
         { status: 400 }
@@ -14,10 +17,21 @@ export async function POST(request: NextRequest) {
 
     // Convert amount to paise (smallest currency unit)
     const amountInPaise = Math.round(amount * 100);
+    console.log('Amount in paise:', amountInPaise);
 
     // Use your Razorpay credentials
-    const RAZORPAY_KEY_ID = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_nMGeAK7esjjWzj';
-    const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || 'gBcxx480PBGVSOOxOIwhQ81O';
+    const RAZORPAY_KEY_ID = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+    const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET;
+
+    console.log('Using Razorpay Key ID:', RAZORPAY_KEY_ID?.substring(0, 10) + '...');
+
+    if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET) {
+      console.error('Razorpay credentials not found');
+      return NextResponse.json(
+        { error: 'Payment configuration error' },
+        { status: 500 }
+      );
+    }
 
     try {
       // Try to use Razorpay server-side API
@@ -37,11 +51,11 @@ export async function POST(request: NextRequest) {
 
       console.log('Creating Razorpay order with options:', orderOptions);
       const order = await razorpay.orders.create(orderOptions);
-      console.log('Razorpay order created successfully:', order);
+      console.log('Razorpay order created successfully:', order.id);
 
       return NextResponse.json(order);
-    } catch (razorpayError) {
-      console.warn('Razorpay API error, using mock order for demo:', razorpayError);
+    } catch (razorpayError: any) {
+      console.warn('Razorpay API error, using mock order for demo:', razorpayError.message);
       
       // Fallback to mock order for demo (this will work with your test keys on frontend)
       const mockOrder = {
@@ -54,13 +68,13 @@ export async function POST(request: NextRequest) {
         entity: 'order'
       };
 
-      console.log('Mock order created:', mockOrder);
+      console.log('Mock order created:', mockOrder.id);
       return NextResponse.json(mockOrder);
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating order:', error);
     return NextResponse.json(
-      { error: 'Failed to create order' },
+      { error: 'Failed to create order: ' + error.message },
       { status: 500 }
     );
   }
