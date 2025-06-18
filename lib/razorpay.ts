@@ -29,6 +29,9 @@ export interface RazorpayOptions {
     netbanking?: boolean;
     wallet?: boolean;
   };
+  modal?: {
+    ondismiss?: () => void;
+  };
 }
 
 export interface RazorpayResponse {
@@ -39,72 +42,103 @@ export interface RazorpayResponse {
 
 export const loadRazorpay = (): Promise<boolean> => {
   return new Promise((resolve) => {
-    if (typeof window !== 'undefined' && window.Razorpay) {
+    // Check if we're in the browser
+    if (typeof window === 'undefined') {
+      resolve(false);
+      return;
+    }
+
+    // Check if Razorpay is already loaded
+    if (window.Razorpay) {
       resolve(true);
       return;
     }
 
     const script = document.createElement('script');
     script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    script.onload = () => resolve(true);
-    script.onerror = () => resolve(false);
-    document.body.appendChild(script);
+    script.async = true;
+    script.onload = () => {
+      console.log('Razorpay SDK loaded successfully');
+      resolve(true);
+    };
+    script.onerror = (error) => {
+      console.error('Failed to load Razorpay SDK:', error);
+      resolve(false);
+    };
+    
+    document.head.appendChild(script);
   });
 };
 
 export const createRazorpayOrder = async (amount: number, currency: string = 'INR') => {
   try {
+    console.log('Creating Razorpay order for amount:', amount);
+    
     const response = await fetch('/api/create-order', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        amount: Math.round(amount * 100), // Convert to paise and ensure integer
+        amount: amount, // Amount in rupees
         currency,
       }),
     });
 
     if (!response.ok) {
-      throw new Error('Failed to create order');
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to create order');
     }
 
-    return await response.json();
+    const order = await response.json();
+    console.log('Order created successfully:', order);
+    return order;
   } catch (error) {
-    console.warn('Using fallback order creation for demo');
-    return {
-      id: `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      amount: Math.round(amount * 100),
-      currency,
-      status: 'created'
-    };
+    console.error('Error creating order:', error);
+    throw error;
   }
 };
 
-export const initiatePayment = async (options: RazorpayOptions) => {
-  const isLoaded = await loadRazorpay();
-  
-  if (!isLoaded) {
-    throw new Error('Razorpay SDK failed to load. Please check your internet connection.');
-  }
-
-  return new Promise((resolve, reject) => {
-    const razorpayOptions = {
-      ...options,
-      modal: {
-        ondismiss: () => {
-          reject(new Error('Payment cancelled by user'));
-        }
+export const initiatePayment = async (options: RazorpayOptions): Promise<void> => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      console.log('Loading Razorpay SDK...');
+      const isLoaded = await loadRazorpay();
+      
+      if (!isLoaded) {
+        throw new Error('Razorpay SDK failed to load. Please check your internet connection and try again.');
       }
-    };
 
-    const razorpay = new window.Razorpay(razorpayOptions);
-    
-    razorpay.on('payment.failed', (response: any) => {
-      reject(new Error(`Payment failed: ${response.error.description}`));
-    });
+      console.log('Initiating payment with options:', options);
 
-    razorpay.open();
-    resolve(true);
+      const razorpayOptions = {
+        ...options,
+        modal: {
+          ondismiss: () => {
+            console.log('Payment modal dismissed by user');
+            reject(new Error('Payment cancelled by user'));
+          },
+          ...options.modal,
+        },
+      };
+
+      const razorpay = new window.Razorpay(razorpayOptions);
+      
+      razorpay.on('payment.failed', (response: any) => {
+        console.error('Payment failed:', response);
+        reject(new Error(`Payment failed: ${response.error?.description || 'Unknown error'}`));
+      });
+
+      razorpay.on('payment.success', (response: any) => {
+        console.log('Payment successful:', response);
+        resolve();
+      });
+
+      console.log('Opening Razorpay checkout...');
+      razorpay.open();
+    } catch (error) {
+      console.error('Error initiating payment:', error);
+      reject(error);
+    }
   });
 };
