@@ -9,7 +9,7 @@ const nextConfig = {
     ],
   },
   // Optimize for production
-  swcMinify: true,
+  swcMinify: false, // Disabled to fix build compatibility issue
   compress: true,
   // Security headers
   async headers() {
