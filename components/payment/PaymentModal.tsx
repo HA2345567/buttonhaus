@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { CheckCircle, Package, Truck, Mail, Phone } from "lucide-react";
 
@@ -10,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useCart } from "@/lib/cart";
+import { useOrders } from "@/lib/orders";
 import { useAuth } from "@/lib/auth";
 
 interface PaymentModalProps {
@@ -21,6 +23,7 @@ interface PaymentModalProps {
 export function PaymentModal({ isOpen, onClose, total }: PaymentModalProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
+  const [orderId, setOrderId] = useState("");
   const [customerInfo, setCustomerInfo] = useState({
     name: "",
     email: "",
@@ -30,7 +33,9 @@ export function PaymentModal({ isOpen, onClose, total }: PaymentModalProps) {
     pincode: ""
   });
   const cart = useCart();
+  const orders = useOrders();
   const { user } = useAuth();
+  const router = useRouter();
 
   // Pre-fill user info if logged in
   useState(() => {
@@ -81,6 +86,14 @@ export function PaymentModal({ isOpen, onClose, total }: PaymentModalProps) {
     // Simulate order processing
     await new Promise(resolve => setTimeout(resolve, 2000));
 
+    // Create order in the orders store
+    const newOrder = orders.addOrder({
+      items: cart.items,
+      total,
+      customerInfo,
+    });
+
+    setOrderId(newOrder.id);
     setIsProcessing(false);
     setOrderPlaced(true);
 
@@ -89,6 +102,8 @@ export function PaymentModal({ isOpen, onClose, total }: PaymentModalProps) {
       cart.clearCart();
       setOrderPlaced(false);
       onClose();
+      // Redirect to orders page
+      router.push('/orders');
     }, 3000);
   };
 
@@ -106,7 +121,8 @@ export function PaymentModal({ isOpen, onClose, total }: PaymentModalProps) {
               <CheckCircle className="h-12 w-12 text-green-600" />
             </motion.div>
             
-            <h2 className="text-2xl font-bold mb-4">Order Placed Successfully!</h2>
+            <h2 className="text-2xl font-bold mb-2">Order Placed Successfully!</h2>
+            <p className="text-lg font-semibold text-primary mb-4">Order ID: {orderId}</p>
             <p className="text-muted-foreground mb-6">
               Thank you for your order. We'll send you a confirmation email shortly.
             </p>
@@ -125,6 +141,10 @@ export function PaymentModal({ isOpen, onClose, total }: PaymentModalProps) {
                 <span>Confirmation email sent to {customerInfo.email}</span>
               </div>
             </div>
+
+            <p className="text-sm text-muted-foreground mt-6">
+              Redirecting to your orders page...
+            </p>
           </div>
         </DialogContent>
       </Dialog>
