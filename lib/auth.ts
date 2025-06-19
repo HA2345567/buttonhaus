@@ -2,32 +2,31 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
-  signOut as firebaseSignOut,
-  onAuthStateChanged,
-  User,
-  updateProfile
-} from "firebase/auth";
-import { auth } from "./firebase";
+
+// Mock user type for demo purposes
+interface MockUser {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  photoURL: string | null;
+}
 
 interface AuthStore {
-  user: User | null;
+  user: MockUser | null;
   loading: boolean;
-  setUser: (user: User | null) => void;
+  setUser: (user: MockUser | null) => void;
   setLoading: (loading: boolean) => void;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, name: string) => Promise<void>;
   signOut: () => Promise<void>;
-  initializeAuth: () => void;
+  initializeAuth: () => () => void;
 }
 
 export const useAuth = create<AuthStore>()(
   persist(
     (set, get) => ({
       user: null,
-      loading: true,
+      loading: false,
 
       setUser: (user) => set({ user }),
       setLoading: (loading) => set({ loading }),
@@ -35,45 +34,61 @@ export const useAuth = create<AuthStore>()(
       signIn: async (email: string, password: string) => {
         try {
           set({ loading: true });
-          const userCredential = await signInWithEmailAndPassword(auth, email, password);
-          set({ user: userCredential.user, loading: false });
+          
+          // Simulate API call
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          // Mock successful login
+          const mockUser: MockUser = {
+            uid: `user_${Date.now()}`,
+            email,
+            displayName: email.split('@')[0],
+            photoURL: null,
+          };
+          
+          set({ user: mockUser, loading: false });
         } catch (error) {
           set({ loading: false });
-          throw error;
+          throw new Error("Invalid email or password");
         }
       },
 
       signUp: async (email: string, password: string, name: string) => {
         try {
           set({ loading: true });
-          const userCredential = await createUserWithEmailAndPassword(auth, email, password);
           
-          // Update the user's display name
-          await updateProfile(userCredential.user, {
+          // Simulate API call
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          // Mock successful signup
+          const mockUser: MockUser = {
+            uid: `user_${Date.now()}`,
+            email,
             displayName: name,
-          });
+            photoURL: null,
+          };
 
-          set({ user: userCredential.user, loading: false });
+          set({ user: mockUser, loading: false });
         } catch (error) {
           set({ loading: false });
-          throw error;
+          throw new Error("Failed to create account");
         }
       },
 
       signOut: async () => {
         try {
-          await firebaseSignOut(auth);
           set({ user: null });
         } catch (error) {
-          throw error;
+          throw new Error("Failed to sign out");
         }
       },
 
       initializeAuth: () => {
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-          set({ user, loading: false });
-        });
-        return unsubscribe;
+        // Mock auth state persistence
+        set({ loading: false });
+        
+        // Return cleanup function
+        return () => {};
       },
     }),
     {

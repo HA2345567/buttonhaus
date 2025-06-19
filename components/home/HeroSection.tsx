@@ -10,9 +10,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 const heroImages = [
-  "https://images.pexels.com/photos/6447067/pexels-photo-6447067.jpeg",
-  "https://images.pexels.com/photos/5695831/pexels-photo-5695831.jpeg",
-  "https://images.pexels.com/photos/7580865/pexels-photo-7580865.jpeg",
+  "https://images.pexels.com/photos/6447067/pexels-photo-6447067.jpeg", // Buttons and sewing accessories
+  "https://images.pexels.com/photos/5695831/pexels-photo-5695831.jpeg", // Colorful buttons
+  "https://images.pexels.com/photos/7580865/pexels-photo-7580865.jpeg", // Zipper close-up
 ];
 
 const stats = [

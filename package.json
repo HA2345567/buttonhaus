@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "CI=true NODE_OPTIONS='--no-force-tty' next build",
     "start": "next start",
     "lint": "next lint"
   },

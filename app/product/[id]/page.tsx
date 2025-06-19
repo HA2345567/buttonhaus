@@ -4,16 +4,18 @@ import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, Minus, Plus, ShoppingCart, Star, Truck } from "lucide-react";
+import { ChevronLeft, ChevronRight, Minus, Plus, ShoppingCart, Star, Truck, Heart } from "lucide-react";
 
 import { products } from "@/lib/data";
 import { useCart } from "@/lib/cart";
+import { useWishlist } from "@/lib/wishlist";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { ProductCard } from "@/components/products/ProductCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 
 export default function ProductPage() {
   const params = useParams();
@@ -28,6 +30,8 @@ export default function ProductPage() {
   const [quantity, setQuantity] = useState(1);
   
   const cart = useCart();
+  const wishlist = useWishlist();
+  const isInWishlist = product ? wishlist.isInWishlist(product.id) : false;
   
   if (!product) {
     // Could use a more sophisticated "product not found" UI here
@@ -58,6 +62,14 @@ export default function ProductPage() {
       color: selectedColor,
       size: selectedSize,
     });
+  };
+
+  const handleToggleWishlist = () => {
+    if (isInWishlist) {
+      wishlist.removeItem(product.id);
+    } else {
+      wishlist.addItem(product);
+    }
   };
   
   const handleQuantityChange = (value: number) => {
@@ -142,7 +154,7 @@ export default function ProductPage() {
             <h1 className="text-3xl font-bold">{product.name}</h1>
             
             <div className="mt-4 flex items-center gap-4">
-              <div className="text-2xl font-semibold">${product.price.toFixed(2)}</div>
+              <div className="text-2xl font-semibold">₹{product.price.toFixed(2)}</div>
               
               <div className="flex items-center gap-1">
                 <div className="flex">
@@ -257,14 +269,28 @@ export default function ProductPage() {
           </div>
           
           <div className="mt-6 space-y-4">
-            <Button size="lg" className="w-full" onClick={handleAddToCart}>
-              <ShoppingCart className="mr-2 h-5 w-5" />
-              Add to Cart
-            </Button>
+            <div className="flex gap-3">
+              <Button size="lg" className="flex-1" onClick={handleAddToCart}>
+                <ShoppingCart className="mr-2 h-5 w-5" />
+                Add to Cart
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={handleToggleWishlist}
+                className={cn(
+                  "px-4",
+                  isInWishlist && "text-red-500 border-red-500 hover:bg-red-50"
+                )}
+              >
+                <Heart className={cn("h-5 w-5", isInWishlist && "fill-current")} />
+              </Button>
+            </div>
             
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Truck className="h-4 w-4" />
-              <span>Free shipping on orders over $50</span>
+              <span>Free shipping on orders over ₹50</span>
             </div>
           </div>
         </div>

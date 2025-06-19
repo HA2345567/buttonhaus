@@ -3,11 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ShoppingCart, Star } from "lucide-react";
+import { ShoppingCart, Star, Heart } from "lucide-react";
 import { motion } from "framer-motion";
 
 import { cn } from "@/lib/utils";
 import { useCart } from "@/lib/cart";
+import { useWishlist } from "@/lib/wishlist";
 import { Product } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,8 +29,12 @@ interface ProductCardProps {
 export function ProductCard({ product, featured = false }: ProductCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const cart = useCart();
+  const wishlist = useWishlist();
+  const isLiked = wishlist.isInWishlist(product.id);
   
-  const handleAddToCart = () => {
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     cart.addItem({
       id: crypto.randomUUID(),
       productId: product.id,
@@ -38,6 +43,16 @@ export function ProductCard({ product, featured = false }: ProductCardProps) {
       image: product.images[0],
       quantity: 1,
     });
+  };
+
+  const handleToggleWishlist = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (isLiked) {
+      wishlist.removeItem(product.id);
+    } else {
+      wishlist.addItem(product);
+    }
   };
 
   return (
@@ -63,8 +78,28 @@ export function ProductCard({ product, featured = false }: ProductCardProps) {
             />
           </Link>
           
+          {/* Wishlist Button */}
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={handleToggleWishlist}
+            className={cn(
+              "absolute top-3 right-3 p-2 rounded-full backdrop-blur-sm transition-all duration-300 z-10",
+              isLiked 
+                ? "bg-red-500 text-white shadow-lg" 
+                : "bg-white/80 text-gray-600 hover:bg-white hover:text-red-500"
+            )}
+          >
+            <Heart 
+              className={cn(
+                "h-4 w-4 transition-all duration-300",
+                isLiked ? "fill-current" : ""
+              )} 
+            />
+          </motion.button>
+          
           {product.bestseller && (
-            <div className="absolute top-2 left-2 z-10">
+            <div className="absolute top-3 left-3 z-10">
               <Badge className="bg-primary">Bestseller</Badge>
             </div>
           )}
@@ -77,7 +112,7 @@ export function ProductCard({ product, featured = false }: ProductCardProps) {
           >
             <Button 
               size="sm" 
-              className="bg-white text-black hover:bg-white/90"
+              className="bg-white text-black hover:bg-white/90 shadow-lg"
               onClick={handleAddToCart}
             >
               <ShoppingCart className="mr-2 h-4 w-4" />
@@ -106,7 +141,7 @@ export function ProductCard({ product, featured = false }: ProductCardProps) {
         </CardContent>
         
         <CardFooter className="p-4 pt-0 flex items-center justify-between">
-          <div className="font-semibold">${product.price.toFixed(2)}</div>
+          <div className="font-semibold">₹{product.price.toFixed(2)}</div>
           {product.colors.length > 0 && (
             <div className="flex gap-1">
               {product.colors.slice(0, 3).map((color) => (
